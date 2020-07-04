@@ -33,4 +33,9 @@ html_theme_options = {
     "github_banner": True,
 }
 
+thebe_config = {
+    "repository_url": "https://github.com/jupyter/jupyter-sphinx"
+}
+
+# Deprecate this after a cycle or two
 jupyter_sphinx_thebelab_config = {"binderOptions": {"repo": "jupyter/jupyter-sphinx"}}

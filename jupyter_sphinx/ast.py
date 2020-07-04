@@ -16,7 +16,6 @@ import ipywidgets.embed
 import nbconvert
 
 from .utils import strip_latex_delimiters, sphinx_abs_dir
-from .thebelab import ThebeSourceNode, ThebeOutputNode
 
 WIDGET_VIEW_MIMETYPE = "application/vnd.jupyter.widget-view+json"
 WIDGET_STATE_MIMETYPE = "application/vnd.jupyter.widget-state+json"
@@ -228,7 +227,7 @@ class JupyterWidgetStateNode(docutils.nodes.Element):
         )
 
 
-def cell_output_to_nodes(outputs, data_priority, write_stderr, dir, thebe_config):
+def cell_output_to_nodes(outputs, data_priority, write_stderr, dir):
     """Convert a jupyter cell with outputs and filenames to doctree nodes.
 
     Parameters
@@ -241,8 +240,6 @@ def cell_output_to_nodes(outputs, data_priority, write_stderr, dir, thebe_config
     dir : string
         Sphinx "absolute path" to the output folder, so it is a relative path
         to the source folder prefixed with ``/``.
-    thebe_config: dict
-        Thebelab configuration object or None
 
     Returns
     -------
@@ -357,7 +354,7 @@ def cell_output_to_nodes(outputs, data_priority, write_stderr, dir, thebe_config
     return to_add
 
 
-def attach_outputs(output_nodes, node, thebe_config, cm_language):
+def attach_outputs(output_nodes, node, cm_language):
     if not node.attributes["hide_code"]:  # only add css if code is displayed
         classes = node.attributes.get("classes", [])
         classes += ["jupyter_container"]
@@ -365,26 +362,11 @@ def attach_outputs(output_nodes, node, thebe_config, cm_language):
     (input_node,) = node.traverse(CellInputNode)
     (outputbundle_node,) = node.traverse(CellOutputBundleNode)
     output_node = CellOutputNode(classes=["cell_output"])
-    if thebe_config:
-        # Move the source from the input node into the thebe_source node
-        source = input_node.children.pop(0)
-        thebe_source = ThebeSourceNode(
-            hide_code=node.attributes["hide_code"],
-            code_below=node.attributes["code_below"],
-            language=cm_language,
-        )
-        thebe_source.children = [source]
-        input_node.children = [thebe_source]
 
-        if not node.attributes["hide_output"]:
-            thebe_output = ThebeOutputNode()
-            thebe_output.children = output_nodes
-            output_node += thebe_output
-    else:
-        if node.attributes["hide_code"]:
-            node.children.pop(0)
-        if not node.attributes["hide_output"]:
-            output_node.children = output_nodes
+    if node.attributes["hide_code"]:
+        node.children.pop(0)
+    if not node.attributes["hide_output"]:
+        output_node.children = output_nodes
 
     # Now replace the bundle with our OutputNode
     outputbundle_node.replace_self(output_node)
@@ -424,8 +406,6 @@ class CellOutputsToNodes(SphinxTransform):
     default_priority = 700
 
     def apply(self):
-        thebe_config = self.config.jupyter_sphinx_thebelab_config
-
         for cell_node in self.document.traverse(JupyterCellNode):
             (output_bundle_node,) = cell_node.traverse(CellOutputBundleNode)
 
@@ -435,10 +415,9 @@ class CellOutputsToNodes(SphinxTransform):
                 self.config.jupyter_execute_data_priority,
                 bool(cell_node.attributes["stderr"]),
                 sphinx_abs_dir(self.env),
-                thebe_config,
             )
             # Remove the outputbundlenode and we'll attach the outputs next
-            attach_outputs(output_nodes, cell_node, thebe_config, cell_node.cm_language)
+            attach_outputs(output_nodes, cell_node, cell_node.cm_language)
 
         # Image collect extra nodes from cell outputs that we need to process
         for node in self.document.traverse(image):

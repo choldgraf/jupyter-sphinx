@@ -16,7 +16,6 @@ from nbconvert.writers import FilesWriter
 import nbformat
 
 import jupyter_sphinx as js
-from .thebelab import ThebeButtonNode, add_thebelab_library
 from ._version import __version__
 from .utils import (
     default_notebook_names,
@@ -90,19 +89,11 @@ class ExecuteJupyterCells(SphinxTransform):
         docname = os.path.basename(self.env.docname)
         default_kernel = self.config.jupyter_execute_default_kernel
         default_names = default_notebook_names(docname)
-        thebe_config = self.config.jupyter_sphinx_thebelab_config
         linenos_config = self.config.jupyter_sphinx_linenos
         continue_linenos = self.config.jupyter_sphinx_continue_linenos
         # Check if we have anything to execute.
         if not doctree.traverse(JupyterCellNode):
             return
-
-        if thebe_config:
-            # Add the button at the bottom if it is not present
-            if not doctree.traverse(ThebeButtonNode):
-                doctree.append(ThebeButtonNode())
-
-            add_thebelab_library(doctree, self.env)
 
         js.logger.info("executing {}".format(docname))
         output_dir = os.path.join(output_directory(self.env), doc_relpath)

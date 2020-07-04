@@ -23,12 +23,10 @@ from .ast import (
     CellOutputsToNodes,
 )
 from .execute import JupyterKernel, ExecuteJupyterCells
-from .thebelab import ThebeButton, ThebeButtonNode, ThebeOutputNode, ThebeSourceNode
 
 REQUIRE_URL_DEFAULT = (
     "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"
 )
-THEBELAB_URL_DEFAULT = "https://unpkg.com/thebelab@^0.4.0"
 
 logger = logging.getLogger(__name__)
 
@@ -73,19 +71,6 @@ def visit_element_html(self, node):
     raise docutils.nodes.SkipNode
 
 
-# Used to render the ThebeSourceNode conditionally for non-HTML builders
-def visit_thebe_source(self, node):
-    if node["hide_code"]:
-        raise docutils.nodes.SkipNode
-    else:
-        self.visit_container(node)
-
-
-render_thebe_source = (
-    visit_thebe_source,
-    lambda self, node: self.depart_container(node),
-)
-
 ##############################################################################
 # Sphinx callback functions
 def builder_inited(app):
@@ -111,10 +96,6 @@ def builder_inited(app):
 
     # add jupyter-sphinx css
     app.add_css_file("jupyter-sphinx.css")
-    # Check if a thebelab config was specified
-    if app.config.jupyter_sphinx_thebelab_config:
-        app.add_js_file("thebelab-helper.js")
-        app.add_css_file("thebelab.css")
 
 
 def build_finished(app, env):
@@ -123,15 +104,6 @@ def build_finished(app, env):
 
     # Copy stylesheet
     src = os.path.join(os.path.dirname(__file__), "css")
-    dst = os.path.join(app.outdir, "_static")
-    copy_asset(src, dst)
-
-    thebe_config = app.config.jupyter_sphinx_thebelab_config
-    if not thebe_config:
-        return
-
-    # Copy all thebelab related assets
-    src = os.path.join(os.path.dirname(__file__), "thebelab")
     dst = os.path.join(app.outdir, "_static")
     copy_asset(src, dst)
 
@@ -170,10 +142,6 @@ def setup(app):
     # ipywidgets config
     app.add_config_value("jupyter_sphinx_require_url", REQUIRE_URL_DEFAULT, "html")
     app.add_config_value("jupyter_sphinx_embed_url", None, "html")
-
-    # thebelab config, can be either a filename or a dict
-    app.add_config_value("jupyter_sphinx_thebelab_config", None, "html")
-    app.add_config_value("jupyter_sphinx_thebelab_url", THEBELAB_URL_DEFAULT, "html")
 
     # linenos config
     app.add_config_value("jupyter_sphinx_linenos", False, "env")
@@ -235,43 +203,8 @@ def setup(app):
         man=(skip, None),
     )
 
-    # ThebeSourceNode holds the source code and is rendered if
-    # hide-code is not specified. For HTML it is always rendered,
-    # but hidden using the stylesheet
-    app.add_node(
-        ThebeSourceNode,
-        html=(visit_container_html, depart_container_html),
-        latex=render_thebe_source,
-        textinfo=render_thebe_source,
-        text=render_thebe_source,
-        man=render_thebe_source,
-    )
-
-    # ThebeOutputNode holds the output of the Jupyter cells
-    # and is rendered if hide-output is not specified.
-    app.add_node(
-        ThebeOutputNode,
-        html=(visit_container_html, depart_container_html),
-        latex=render_container,
-        textinfo=render_container,
-        text=render_container,
-        man=render_container,
-    )
-
-    # ThebeButtonNode is the button that activates thebelab
-    # and is only rendered for the HTML builder
-    app.add_node(
-        ThebeButtonNode,
-        html=(visit_element_html, None),
-        latex=(skip, None),
-        textinfo=(skip, None),
-        text=(skip, None),
-        man=(skip, None),
-    )
-
     app.add_directive("jupyter-execute", JupyterCell)
     app.add_directive("jupyter-kernel", JupyterKernel)
-    app.add_directive("thebe-button", ThebeButton)
     app.add_role("jupyter-download:notebook", JupyterDownloadRole())
     app.add_role("jupyter-download:nb", JupyterDownloadRole())
     app.add_role("jupyter-download:script", JupyterDownloadRole())

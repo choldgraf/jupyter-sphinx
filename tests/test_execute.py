@@ -22,7 +22,6 @@ from jupyter_sphinx.ast import (
     cell_output_to_nodes,
     JupyterDownloadRole,
 )
-from jupyter_sphinx.thebelab import ThebeSourceNode, ThebeOutputNode, ThebeButtonNode
 
 
 @pytest.fixture()

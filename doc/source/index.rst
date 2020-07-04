@@ -109,11 +109,18 @@ when they are included with Sphinx autodoc.
 Thebelab support
 ----------------
 
-To turn on `thebelab <https://thebelab.readthedocs.io/>`_, specify its configuration directly
+To turn on `thebelab <https://thebelab.readthedocs.io/>`_, first install ``sphinx-thebelab``
+and add it to your extensions list:
+
 in ``conf.py``:
 
 .. code-block:: python
 
+  extensions = [
+    ...
+    "sphinx_thebelab",
+    ...
+  ]
   jupyter_sphinx_thebelab_config = {
       'requestKernel': True,
       'binderOptions': {
